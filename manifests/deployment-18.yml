@@ -1,0 +1,19 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: "mytcsaskcluster-0487"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: "mytcsaskcluster-0487"
+  template:
+    metadata:
+      labels:
+        app: "mytcsaskcluster-0487"
+    spec:
+      containers:
+        - name: "mytcsaskcluster-0487"
+          image: "myacr202223.azurecr.io/mytcsaskcluster"
+          ports:
+          - containerPort: 80
