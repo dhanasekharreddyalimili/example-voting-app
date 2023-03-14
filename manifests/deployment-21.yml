@@ -1,0 +1,19 @@
+apiVersion : apps/v1
+kind: Deployment
+metadata:
+  name: "myakscluster-bdba"
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: "myakscluster-bdba"
+  template:
+    metadata:
+      labels:
+        app: "myakscluster-bdba"
+    spec:
+      containers:
+        - name: "myakscluster-bdba"
+          image: "myacr2024.azurecr.io/myakscluster"
+          ports:
+          - containerPort: 80
