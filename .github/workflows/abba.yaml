@@ -1,0 +1,107 @@
+name: abba
+"on":
+    push:
+        branches:
+            - master
+    workflow_dispatch: {}
+env:
+    ACR_RESOURCE_GROUP: aks-rg
+    AZURE_CONTAINER_REGISTRY: mytcsacr2023
+    CLUSTER_NAME: tcs-pwc-cluster
+    CLUSTER_RESOURCE_GROUP: aks-rg
+    CONTAINER_NAME: image-workflow-1682923232442
+    DEPLOYMENT_MANIFEST_PATH: |
+        ./manifests/deployment-1.yml
+        ./manifests/deployment-10.yml
+        ./manifests/deployment-11.yml
+        ./manifests/deployment-12.yml
+        ./manifests/deployment-13.yml
+        ./manifests/deployment-14.yml
+        ./manifests/deployment-15.yml
+        ./manifests/deployment-16.yml
+        ./manifests/deployment-17.yml
+        ./manifests/deployment-18.yml
+        ./manifests/deployment-19.yml
+        ./manifests/deployment-2.yml
+        ./manifests/deployment-20.yml
+        ./manifests/deployment-21.yml
+        ./manifests/deployment-3.yml
+        ./manifests/deployment-4.yml
+        ./manifests/deployment-5.yml
+        ./manifests/deployment-6.yml
+        ./manifests/deployment-7.yml
+        ./manifests/deployment-8.yml
+        ./manifests/deployment-9.yml
+        ./manifests/deployment.yml
+        ./manifests/service-1.yml
+        ./manifests/service-10.yml
+        ./manifests/service-11.yml
+        ./manifests/service-12.yml
+        ./manifests/service-13.yml
+        ./manifests/service-14.yml
+        ./manifests/service-15.yml
+        ./manifests/service-16.yml
+        ./manifests/service-17.yml
+        ./manifests/service-18.yml
+        ./manifests/service-19.yml
+        ./manifests/service-2.yml
+        ./manifests/service-20.yml
+        ./manifests/service-21.yml
+        ./manifests/service-3.yml
+        ./manifests/service-4.yml
+        ./manifests/service-5.yml
+        ./manifests/service-6.yml
+        ./manifests/service-7.yml
+        ./manifests/service-8.yml
+        ./manifests/service-9.yml
+        ./manifests/service.yml
+jobs:
+    buildImage:
+        permissions:
+            contents: read
+            id-token: write
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+            - uses: azure/login@v1.4.3
+              name: Azure login
+              with:
+                client-id: ${{ secrets.AZURE_CLIENT_ID }}
+                subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+                tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+            - name: Build and push image to ACR
+              run: az acr build --image ${{ env.CONTAINER_NAME }}:${{ github.sha }} --registry ${{ env.AZURE_CONTAINER_REGISTRY }} -g ${{ env.ACR_RESOURCE_GROUP }} -f ./vote/Dockerfile ./
+    deploy:
+        permissions:
+            actions: read
+            contents: read
+            id-token: write
+        runs-on: ubuntu-latest
+        needs:
+            - buildImage
+        steps:
+            - uses: actions/checkout@v3
+            - uses: azure/login@v1.4.3
+              name: Azure login
+              with:
+                client-id: ${{ secrets.AZURE_CLIENT_ID }}
+                subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+                tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+            - uses: azure/use-kubelogin@v1
+              name: Set up kubelogin for non-interactive login
+              with:
+                kubelogin-version: v0.0.25
+            - uses: azure/aks-set-context@v3
+              name: Get K8s context
+              with:
+                admin: "false"
+                cluster-name: ${{ env.CLUSTER_NAME }}
+                resource-group: ${{ env.CLUSTER_RESOURCE_GROUP }}
+                use-kubelogin: "true"
+            - uses: Azure/k8s-deploy@v4
+              name: Deploys application
+              with:
+                action: deploy
+                images: ${{ env.AZURE_CONTAINER_REGISTRY }}.azurecr.io/${{ env.CONTAINER_NAME }}:${{ github.sha }}
+                manifests: ${{ env.DEPLOYMENT_MANIFEST_PATH }}
+                namespace: namespace-workflow-1682923232442
